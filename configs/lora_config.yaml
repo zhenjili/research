@@ -1,0 +1,57 @@
+# LoRA Training Configuration for Qwen2.5-1.5B (General LLM)
+# Optimized for A10 24GB GPU
+# Using general LLM (not Coder) to measure GRPO improvement
+
+# Model settings
+model_name_or_path: Qwen/Qwen2.5-1.5B-Instruct
+trust_remote_code: true
+
+# LoRA settings
+lora_rank: 32
+lora_alpha: 64
+lora_dropout: 0.05
+lora_target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+
+# Training settings
+output_dir: ./outputs/qwen-lora
+num_train_epochs: 2
+per_device_train_batch_size: 1
+per_device_eval_batch_size: 1
+gradient_accumulation_steps: 16
+learning_rate: 2.0e-4
+weight_decay: 0.01
+warmup_ratio: 0.03
+lr_scheduler_type: cosine
+
+# Optimization
+bf16: true
+tf32: true
+gradient_checkpointing: true
+optim: adamw_torch
+
+# Data settings
+max_seq_length: 1536
+preprocessing_num_workers: 8
+
+# Logging & Saving
+logging_steps: 10
+save_steps: 1000
+eval_steps: 1000
+save_total_limit: 3
+report_to: wandb  # or tensorboard
+
+# Evaluation
+do_eval: true
+eval_strategy: steps
+
+# Other
+seed: 42
+dataloader_num_workers: 4
+remove_unused_columns: false
