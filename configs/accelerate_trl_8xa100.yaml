@@ -1,0 +1,40 @@
+# Accelerate Configuration for TRL GRPO Training
+# Hardware: 8x A100 80GB
+# Setup: GPU 0 for vLLM generation, GPUs 1-7 for training
+#
+# Using simple multi-GPU (no DeepSpeed) for TRL compatibility
+#
+# Usage:
+#   CUDA_VISIBLE_DEVICES=1,2,3,4,5,6,7 accelerate launch \
+#       --config_file configs/accelerate_trl_8xa100.yaml \
+#       training/train_grpo_trl_enhanced.py
+
+compute_environment: LOCAL_MACHINE
+debug: false
+
+# Use simple multi-GPU (DDP) instead of DeepSpeed for TRL compatibility
+distributed_type: MULTI_GPU
+
+# Mixed precision training (BF16 for A100)
+mixed_precision: bf16
+
+# Number of GPUs to use for training (7 GPUs)
+# GPU 0 reserved for vLLM
+num_processes: 7
+
+# Machine configuration
+num_machines: 1
+machine_rank: 0
+main_process_ip: localhost
+main_process_port: 29500
+
+# Backend
+rdzv_backend: static
+same_network: true
+
+# Other settings
+downcast_bf16: 'no'
+tpu_env: []
+tpu_use_cluster: false
+tpu_use_sudo: false
+use_cpu: false

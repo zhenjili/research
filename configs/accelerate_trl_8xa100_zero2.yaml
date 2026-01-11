@@ -1,0 +1,57 @@
+# Accelerate Configuration for TRL GRPO Training (ZeRO-2)
+# Hardware: 8x A100 80GB
+# Setup: GPUs 0-1 for vLLM generation, GPUs 2-7 for training
+#
+# ZeRO-2 is faster than ZeRO-3 but uses more memory
+# Use this if you have enough memory and want faster training
+#
+# Usage:
+#   CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 accelerate launch \
+#       --config_file configs/accelerate_trl_8xa100_zero2.yaml \
+#       training/train_grpo_trl_enhanced.py
+
+compute_environment: LOCAL_MACHINE
+debug: false
+
+# Use DeepSpeed for distributed training
+distributed_type: DEEPSPEED
+
+# DeepSpeed configuration
+deepspeed_config:
+  # ZeRO Stage 2 (shards optimizer + gradients only, not parameters)
+  # Faster than ZeRO-3, but uses more GPU memory
+  zero_stage: 2
+
+  # Offload to CPU (optional)
+  offload_optimizer_device: none  # Change to 'cpu' if needed
+
+  # Gradient accumulation
+  gradient_accumulation_steps: auto
+  gradient_clipping: auto
+
+  # Training precision
+  train_batch_size: auto
+  train_micro_batch_size_per_gpu: auto
+
+# Mixed precision training (BF16 for A100)
+mixed_precision: bf16
+
+# Number of GPUs for training
+num_processes: 6
+
+# Machine configuration
+num_machines: 1
+machine_rank: 0
+main_process_ip: localhost
+main_process_port: 29500
+
+# Backend
+rdzv_backend: static
+same_network: true
+
+# Other settings
+downcast_bf16: 'no'
+tpu_env: []
+tpu_use_cluster: false
+tpu_use_sudo: false
+use_cpu: false

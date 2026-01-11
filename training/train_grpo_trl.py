@@ -425,8 +425,10 @@ def train_grpo(config: Dict[str, Any]):
 
     for episode in tqdm(range(num_episodes), desc="Training"):
         try:
+            print(f"\n[Episode {episode}] Starting...", flush=True)
             # Sample a batch of prompts
             batch_indices = torch.randint(0, len(dataset), (batch_size,)).tolist()
+            print(f"[Episode {episode}] Sampled {len(batch_indices)} prompts", flush=True)
 
             all_input_ids = []
             all_attention_masks = []
@@ -437,8 +439,10 @@ def train_grpo(config: Dict[str, Any]):
             # Generate n_samples responses per prompt
             model.eval()
             generation_failed = False
+            print(f"[Episode {episode}] Starting generation for {batch_size} prompts × {n_samples_per_prompt} samples = {batch_size * n_samples_per_prompt} total", flush=True)
             with torch.no_grad():
-                for idx in batch_indices:
+                for prompt_idx, idx in enumerate(batch_indices):
+                    print(f"[Episode {episode}] Generating for prompt {prompt_idx+1}/{len(batch_indices)}", flush=True)
                     if generation_failed:
                         break
 
@@ -456,13 +460,18 @@ def train_grpo(config: Dict[str, Any]):
                     prompt_ids = prompt_encoded["input_ids"].to(device)
                     prompt_len = prompt_ids.shape[1]
 
-                    for _ in range(n_samples_per_prompt):
+                    for sample_idx in range(n_samples_per_prompt):
+                        print(f"[Episode {episode}] Prompt {prompt_idx+1}/{len(batch_indices)}, Sample {sample_idx+1}/{n_samples_per_prompt} - Generating...", flush=True)
                         # Generate response with error handling
                         try:
+                            import time
+                            gen_start = time.time()
                             output_ids = model.generate(
                                 prompt_ids,
                                 **generation_kwargs,
                             )
+                            gen_time = time.time() - gen_start
+                            print(f"[Episode {episode}] Sample generated in {gen_time:.2f}s", flush=True)
                         except RuntimeError as e:
                             print(f"\nWarning: Generation failed: {e}")
                             generation_failed = True
@@ -498,8 +507,13 @@ def train_grpo(config: Dict[str, Any]):
                 print(f"\nSkipping episode {episode} due to generation failure")
                 continue
 
+            print(f"[Episode {episode}] Generation complete! Computing rewards for {len(decoded_responses)} samples...", flush=True)
             # Compute rewards
+            import time
+            reward_start = time.time()
             rewards = compute_rewards(decoded_responses, all_test_cases)
+            reward_time = time.time() - reward_start
+            print(f"[Episode {episode}] Rewards computed in {reward_time:.2f}s, mean reward: {rewards.mean().item():.3f}", flush=True)
 
             # Compute GRPO advantages
             advantages = compute_grpo_advantages(rewards, n_samples_per_prompt)
